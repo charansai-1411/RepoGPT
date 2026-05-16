@@ -1,0 +1,12 @@
+langchain
+langchain-community
+langchain-groq
+langchain-huggingface
+sentence-transformers
+tree-sitter==0.21.3
+tree-sitter-python==0.21.0
+streamlit
+chromadb
+langchain-chroma
+gitpython
+python-dotenv
