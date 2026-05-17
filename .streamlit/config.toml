@@ -1,2 +1,2 @@
 [server]
-watchLocalScriptOnly = true
+fileWatcherType = "none"
