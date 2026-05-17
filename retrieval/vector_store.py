@@ -33,21 +33,35 @@ def search_code(query: str, repo_path: str = None, repo_map: dict[str, str] = No
                 any(doc.metadata.get("file_path", "").startswith(d + "/") or doc.metadata.get("file_path", "").startswith(d + "\\") for d in relevant_dirs)
             ]
             
-    # 2. Separate implementation and test/example files
+    # 2. Separate file-mentioned matches, core implementation, and test/example files
+    file_mentioned_results = []
     impl_results = []
     test_results = []
     
+    query_lower = query.lower()
+    
     for doc, score in results:
-        file_path = doc.metadata.get("file_path", "").lower()
-        is_test_file = any(file_path.startswith(p) for p in ["tests/", "tests\\", "examples/", "examples\\"]) or "test_" in file_path or "conftest" in file_path
+        file_path = doc.metadata.get("file_path", "")
+        file_path_lower = file_path.lower()
+        file_name = os.path.basename(file_path).lower()
         
-        if is_test_file:
-            test_results.append((doc, score))
+        # Check if the query explicitly mentions this specific file name or path
+        is_file_mentioned = (file_name in query_lower) or (file_path_lower in query_lower)
+        
+        if is_file_mentioned:
+            file_mentioned_results.append((doc, score))
         else:
-            impl_results.append((doc, score))
-            
-    # 3. Always prioritize core implementation chunks, fall back to test chunks
-    sorted_results = impl_results + test_results
+            is_test_file = any(file_path_lower.startswith(p) for p in ["tests/", "tests\\", "examples/", "examples\\"]) or "test_" in file_path_lower or "conftest" in file_path_lower
+            if is_test_file:
+                test_results.append((doc, score))
+            else:
+                impl_results.append((doc, score))
+                
+    # 3. Sort mentioned file chunks chronologically by start_line so the LLM reads them sequentially!
+    file_mentioned_results.sort(key=lambda x: x[0].metadata.get("start_line", 0))
+    
+    # Prioritize: 1) Explicitly mentioned files, 2) Core implementation, 3) Test suites
+    sorted_results = file_mentioned_results + impl_results + test_results
     
     filtered_results = [doc for doc, score in sorted_results[:top_k]]
         
