@@ -10,3 +10,4 @@ chromadb
 langchain-chroma
 gitpython
 python-dotenv
+protobuf==3.20.3
