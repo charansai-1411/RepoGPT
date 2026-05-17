@@ -29,7 +29,8 @@ def search_code(query: str, repo_path: str = None, repo_map: dict[str, str] = No
         if len(relevant_dirs) < len(repo_map):
             results = [
                 (doc, score) for doc, score in results
-                if any(doc.metadata.get("file_path", "").startswith(d + "/") or doc.metadata.get("file_path", "").startswith(d + "\\") for d in relevant_dirs)
+                if ("/" not in doc.metadata.get("file_path", "") and "\\" not in doc.metadata.get("file_path", "")) or
+                any(doc.metadata.get("file_path", "").startswith(d + "/") or doc.metadata.get("file_path", "").startswith(d + "\\") for d in relevant_dirs)
             ]
             
     # 2. Separate implementation and test/example files
