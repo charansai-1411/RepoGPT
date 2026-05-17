@@ -11,6 +11,38 @@ def get_parser():
     return parser
 
 def extract_chunks(file_path: str, repo_path: str) -> list[dict]:
+    """Parses a file and returns chunks. Uses AST for Python, and line-based chunking for others."""
+    if file_path.endswith('.py'):
+        return _extract_python_chunks(file_path, repo_path)
+    else:
+        return _extract_generic_chunks(file_path, repo_path)
+
+def _extract_generic_chunks(file_path: str, repo_path: str) -> list[dict]:
+    chunks = []
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            code_lines = f.readlines()
+    except Exception:
+        return []
+        
+    CHUNK_SIZE = 50
+    rel_path = file_path.replace(repo_path, "").lstrip("/\\")
+    
+    for i in range(0, len(code_lines), CHUNK_SIZE):
+        start_line = i + 1
+        end_line = min(i + CHUNK_SIZE, len(code_lines))
+        chunk_code = "".join(code_lines[i:i+CHUNK_SIZE])
+        chunks.append({
+            "file_path": rel_path,
+            "start_line": start_line,
+            "end_line": end_line,
+            "symbol_name": f"chunk_{start_line}_{end_line}",
+            "content": chunk_code
+        })
+        
+    return chunks
+
+def _extract_python_chunks(file_path: str, repo_path: str) -> list[dict]:
     """Parses a Python file and returns AST chunks (classes and functions)."""
     parser = get_parser()
     try:
@@ -37,6 +69,12 @@ def extract_chunks(file_path: str, repo_path: str) -> list[dict]:
             
             # Get the exact source code for this chunk
             chunk_code = code.encode('utf8')[node.start_byte:node.end_byte].decode('utf8')
+            
+            if node.type == 'class_definition':
+                import re
+                match = re.search(r'\n\s+def\s+', chunk_code)
+                if match:
+                    chunk_code = chunk_code[:match.start()] + "\n    # ... [Methods chunked separately] ..."
             
             rel_path = file_path.replace(repo_path, "").lstrip("/\\")
             

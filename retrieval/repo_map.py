@@ -2,6 +2,13 @@ import os
 from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 
+SUPPORTED_EXTS = {
+    ".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".c", ".cpp", ".cc", ".h", ".hpp",
+    ".cs", ".go", ".rs", ".rb", ".php", ".swift", ".kt", ".md", ".txt", ".html",
+    ".css", ".json", ".yml", ".yaml", ".xml", ".sh", ".bash", ".sql", ".m", ".scala",
+    ".dart", ".lua", ".r", ".pl"
+}
+
 def build_repo_map(repo_path: str) -> dict[str, str]:
     """Builds a summary map of top-level directories in the repository."""
     model_name = os.environ.get("MODEL_ID", "llama-3.3-70b-versatile")
@@ -24,7 +31,7 @@ def build_repo_map(repo_path: str) -> dict[str, str]:
             dir_files = []
             for root, _, files in os.walk(item_path):
                 for f in files:
-                    if f.endswith('.py'):
+                    if any(f.endswith(ext) for ext in SUPPORTED_EXTS):
                         dir_files.append(os.path.relpath(os.path.join(root, f), repo_path))
             
             if dir_files:

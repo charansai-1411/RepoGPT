@@ -6,16 +6,26 @@ from retrieval.vector_store import search_code
 def format_context(chunks: list[dict]) -> str:
     """Formats the retrieved chunks into a string for the prompt context."""
     context_parts = []
+    total_chars = 0
+    
     for chunk in chunks:
         file_path = chunk.get("file_path", "unknown")
         start_line = chunk.get("start_line", 0)
         end_line = chunk.get("end_line", 0)
         content = chunk.get("content", "")
         
+        if len(content) > 3000:
+            content = content[:3000] + "\n...[TRUNCATED]"
+            
+        if total_chars + len(content) > 15000:
+            break
+            
         context_parts.append(
-            f"--- File: {file_path} (Lines {start_line}-{end_line}) ---\\n{content}\\n"
+            f"--- File: {file_path} (Lines {start_line}-{end_line}) ---\n{content}\n"
         )
-    return "\\n".join(context_parts)
+        total_chars += len(content)
+        
+    return "\n".join(context_parts)
 
 def get_qa_chain():
     """Builds and returns the LCEL QA chain."""
@@ -31,7 +41,7 @@ def get_qa_chain():
     
     return chain
 
-def ask_question(question: str, repo_path: str = None, repo_map: dict = None, top_k: int = 5) -> tuple[str, list[dict]]:
+def ask_question(question: str, repo_path: str = None, repo_map: dict = None, top_k: int = 8) -> tuple[str, list[dict]]:
     """Retrieves context and asks the question using the QA chain."""
     # 1. Retrieve context
     chunks = search_code(question, repo_path=repo_path, repo_map=repo_map, top_k=top_k)

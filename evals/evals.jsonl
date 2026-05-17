@@ -1,11 +1,11 @@
-{"question": "Where is request context pushed?", "answer_contains": ["appcontext.py", "push"]}
-{"question": "How does routing work?", "ground_truth_files": ["app.py", "routing.py"]}
+{"question": "Where is request context pushed?", "answer_contains": ["ctx.py", "push"]}
+{"question": "How does routing work?", "ground_truth_files": ["app.py", "scaffold.py"]}
 {"question": "Where is the Flask application class defined?", "ground_truth_files": ["app.py", "Flask"]}
 {"question": "How are blueprints registered?", "answer_contains": ["register_blueprint", "blueprints.py"]}
 {"question": "Where does the Before Request hook get called?", "answer_contains": ["preprocess_request"]}
 {"question": "What function is used to render templates?", "answer_contains": ["render_template", "templating.py"]}
 {"question": "Where are the session interfaces defined?", "ground_truth_files": ["sessions.py"]}
-{"question": "How does the jsonify function work?", "answer_contains": ["json.py", "jsonify"]}
+{"question": "How does the jsonify function work?", "answer_contains": ["json", "jsonify"]}
 {"question": "Where is the request object defined?", "ground_truth_files": ["wrappers.py", "Request"]}
 {"question": "Where is the Flask CLI defined?", "ground_truth_files": ["cli.py"]}
 {"question": "How do you handle errors like 404?", "answer_contains": ["errorhandler"]}

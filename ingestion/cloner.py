@@ -6,6 +6,12 @@ from git import Repo
 
 MAX_LINES = 50000
 IGNORE_DIRS = {".git", "venv", "node_modules", ".venv", "__pycache__"}
+SUPPORTED_EXTS = {
+    ".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".c", ".cpp", ".cc", ".h", ".hpp",
+    ".cs", ".go", ".rs", ".rb", ".php", ".swift", ".kt", ".md", ".txt", ".html",
+    ".css", ".json", ".yml", ".yaml", ".xml", ".sh", ".bash", ".sql", ".m", ".scala",
+    ".dart", ".lua", ".r", ".pl"
+}
 
 class RepoTooLargeError(Exception):
     pass
@@ -24,7 +30,7 @@ def clone_and_validate(repo_url: str):
         dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
         
         for file in files:
-            if file.endswith(".py"):
+            if any(file.endswith(ext) for ext in SUPPORTED_EXTS):
                 file_path = os.path.join(root, file)
                 py_files.append(file_path)
                 try:
@@ -38,7 +44,7 @@ def clone_and_validate(repo_url: str):
         shutil.rmtree(temp_dir, ignore_errors=True)
         raise RepoTooLargeError(f"Repo too large for V1: {total_lines} lines (Limit is {MAX_LINES})")
         
-    print(f"Validation successful. {len(py_files)} Python files, {total_lines} total lines.")
+    print(f"Validation successful. {len(py_files)} files, {total_lines} total lines.")
     return temp_dir, py_files
 
 def cleanup_repo(repo_path: str):

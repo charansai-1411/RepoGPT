@@ -36,9 +36,34 @@ def my_function():
         assert "my_method" in symbols, "my_method symbol not found"
         assert "my_function" in symbols, "my_function symbol not found"
         
-        print("Chunker unit test passed successfully!")
+        print("Chunker python unit test passed successfully!")
+    finally:
+        os.remove(temp_file_path)
+
+def test_extract_generic_chunks():
+    # Create a temporary js file to test generic fallback
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as f:
+        # Create more than 50 lines to test chunk splitting
+        js_content = "const a = 1;\n" * 60
+        f.write(js_content)
+        temp_file_path = f.name
+        
+    try:
+        repo_path = os.path.dirname(temp_file_path)
+        chunks = extract_chunks(temp_file_path, repo_path)
+        
+        # We expect 2 chunks since it's 60 lines and CHUNK_SIZE=50
+        assert len(chunks) == 2, f"Expected 2 chunks, got {len(chunks)}"
+        
+        assert chunks[0]["start_line"] == 1
+        assert chunks[0]["end_line"] == 50
+        assert chunks[1]["start_line"] == 51
+        assert chunks[1]["end_line"] == 60
+        
+        print("Chunker generic unit test passed successfully!")
     finally:
         os.remove(temp_file_path)
 
 if __name__ == "__main__":
     test_extract_chunks()
+    test_extract_generic_chunks()

@@ -12,33 +12,43 @@ def get_vector_store(collection_name: str = "repo_chunks"):
         persist_directory=persist_directory
     )
 
-def search_code(query: str, repo_path: str = None, repo_map: dict[str, str] = None, top_k: int = 5) -> list[dict]:
+def search_code(query: str, repo_path: str = None, repo_map: dict[str, str] = None, top_k: int = 8) -> list[dict]:
     """Searches the vector store for relevant code chunks."""
     vector_store = get_vector_store()
     
     try:
-        results = vector_store.similarity_search_with_score(query, k=top_k * 2)
+        # Retrieve more candidates to allow sorting/filtering implementation vs test code
+        results = vector_store.similarity_search_with_score(query, k=100)
     except Exception:
         results = []
     
-    filtered_results = []
-    
+    # 1. Apply repo_map filtering if provided
     if repo_map:
         from retrieval.repo_map import filter_directories
         relevant_dirs = filter_directories(query, repo_map)
-        
         if len(relevant_dirs) < len(repo_map):
-            for doc, score in results:
-                file_path = doc.metadata.get("file_path", "")
-                if any(file_path.startswith(d + "/") or file_path.startswith(d + "\\") for d in relevant_dirs):
-                    filtered_results.append(doc)
-                if len(filtered_results) >= top_k:
-                    break
-                    
-    if not filtered_results:
-        filtered_results = [doc for doc, score in results[:top_k]]
-    else:
-        filtered_results = filtered_results[:top_k]
+            results = [
+                (doc, score) for doc, score in results
+                if any(doc.metadata.get("file_path", "").startswith(d + "/") or doc.metadata.get("file_path", "").startswith(d + "\\") for d in relevant_dirs)
+            ]
+            
+    # 2. Separate implementation and test/example files
+    impl_results = []
+    test_results = []
+    
+    for doc, score in results:
+        file_path = doc.metadata.get("file_path", "").lower()
+        is_test_file = any(file_path.startswith(p) for p in ["tests/", "tests\\", "examples/", "examples\\"]) or "test_" in file_path or "conftest" in file_path
+        
+        if is_test_file:
+            test_results.append((doc, score))
+        else:
+            impl_results.append((doc, score))
+            
+    # 3. Always prioritize core implementation chunks, fall back to test chunks
+    sorted_results = impl_results + test_results
+    
+    filtered_results = [doc for doc, score in sorted_results[:top_k]]
         
     enriched_chunks = []
     
@@ -48,19 +58,6 @@ def search_code(query: str, repo_path: str = None, repo_map: dict[str, str] = No
         end_line = doc.metadata.get("end_line")
         content = doc.page_content
         
-        if repo_path:
-            full_file_path = os.path.join(repo_path, file_path)
-            if os.path.exists(full_file_path):
-                try:
-                    with open(full_file_path, "r", encoding="utf-8") as f:
-                        full_content = f.read()
-                        if len(full_content) < 8000:  # Approx 2k tokens
-                            content = full_content
-                            start_line = 1
-                            end_line = full_content.count('\\n') + 1
-                except Exception:
-                    pass
-                    
         enriched_chunks.append({
             "file_path": file_path,
             "start_line": start_line,

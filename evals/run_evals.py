@@ -21,9 +21,13 @@ def evaluate():
     valid_citations = 0
     latencies = []
     
-    print(f"Running {len(evals)} evaluations...")
+    print(f"Running {len(evals)} evaluations...", flush=True)
     
     for i, eval_item in enumerate(evals):
+        if i > 0:
+            # Sleep to prevent hitting Groq's TPM limit on free accounts
+            time.sleep(12)
+            
         question = eval_item["question"]
         expected_files = eval_item.get("ground_truth_files", [])
         expected_terms = eval_item.get("answer_contains", [])
@@ -32,7 +36,7 @@ def evaluate():
         try:
             answer, sources = ask_question(question)
         except Exception as e:
-            print(f"Error on question {i+1}: {e}")
+            print(f"Error on question {i+1}: {e}", flush=True)
             continue
             
         latency = time.time() - start_time
@@ -54,7 +58,7 @@ def evaluate():
         if "`" in answer and ":" in answer and "-" in answer:
             valid_citations += 1
             
-        print(f"Q{i+1}: {'PASS' if is_accurate else 'FAIL'} | Latency: {latency:.2f}s")
+        print(f"Q{i+1}: {'PASS' if is_accurate else 'FAIL'} | Latency: {latency:.2f}s", flush=True)
         
     acc = correct / len(evals) * 100 if evals else 0
     cit_rate = valid_citations / len(evals) * 100 if evals else 0
@@ -68,10 +72,10 @@ def evaluate():
     else:
         p95_lat = 0
     
-    print("\\n--- Evaluation Results ---")
-    print(f"Accuracy: {acc:.1f}% (Target: >80%)")
-    print(f"Citation Rate: {cit_rate:.1f}% (Target: 100%)")
-    print(f"Latency p95: {p95_lat:.2f}s (Target: <3s)")
+    print("\\n--- Evaluation Results ---", flush=True)
+    print(f"Accuracy: {acc:.1f}% (Target: >80%)", flush=True)
+    print(f"Citation Rate: {cit_rate:.1f}% (Target: 100%)", flush=True)
+    print(f"Latency p95: {p95_lat:.2f}s (Target: <3s)", flush=True)
 
 if __name__ == "__main__":
     evaluate()

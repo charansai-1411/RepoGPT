@@ -4,8 +4,13 @@ from langchain_core.documents import Document
 from langchain_chroma import Chroma
 import shutil
 
+_embeddings_instance = None
+
 def get_embeddings():
-    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    global _embeddings_instance
+    if _embeddings_instance is None:
+        _embeddings_instance = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    return _embeddings_instance
 
 def get_vector_store(collection_name: str = "repo_chunks"):
     embeddings = get_embeddings()
@@ -23,11 +28,23 @@ def embed_and_store(chunks: list[dict], clear_existing: bool = True):
         print("No chunks to store.")
         return
         
-    persist_directory = os.path.join(os.path.dirname(os.path.dirname(__file__)), "chroma_db")
-    if clear_existing and os.path.exists(persist_directory):
-        shutil.rmtree(persist_directory)
-        
     vector_store = get_vector_store()
+    
+    if clear_existing:
+        try:
+            db_data = vector_store.get()
+            if db_data and "ids" in db_data and db_data["ids"]:
+                vector_store.delete(ids=db_data["ids"])
+                print(f"Cleared {len(db_data['ids'])} existing chunks via Chroma API.")
+        except Exception as e:
+            print(f"Warning: Could not clear existing chunks via API: {e}")
+            persist_directory = os.path.join(os.path.dirname(os.path.dirname(__file__)), "chroma_db")
+            if os.path.exists(persist_directory):
+                try:
+                    shutil.rmtree(persist_directory)
+                    print("Cleared Chroma DB directory.")
+                except Exception as ex:
+                    print(f"Warning: Could not remove directory: {ex}")
     
     documents = []
     for chunk in chunks:
