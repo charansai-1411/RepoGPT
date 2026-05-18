@@ -19,8 +19,18 @@ class RepoTooLargeError(Exception):
 def clone_and_validate(repo_url: str):
     """Clones a repo to a temporary directory, validates line count, and returns the path."""
     temp_dir = tempfile.mkdtemp()
-    print(f"Cloning {repo_url} into {temp_dir}...")
-    Repo.clone_from(repo_url, temp_dir)
+    
+    # Check for GITHUB_TOKEN to support private repos securely
+    token = os.environ.get("GITHUB_TOKEN")
+    clone_url = repo_url
+    if token and "github.com" in repo_url and "@" not in repo_url:
+        clone_url = repo_url.replace("https://github.com", f"https://{token}@github.com")
+        clone_url = clone_url.replace("http://github.com", f"https://{token}@github.com")
+        print(f"Cloning private repo into {temp_dir} using GITHUB_TOKEN...")
+    else:
+        print(f"Cloning {repo_url} into {temp_dir}...")
+        
+    Repo.clone_from(clone_url, temp_dir)
     
     total_lines = 0
     py_files = []
