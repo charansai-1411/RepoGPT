@@ -14,7 +14,8 @@ def get_embeddings():
 
 def get_vector_store(collection_name: str = "repo_chunks"):
     embeddings = get_embeddings()
-    persist_directory = os.path.join(os.path.dirname(os.path.dirname(__file__)), "chroma_db")
+    import tempfile
+    persist_directory = os.path.join(tempfile.gettempdir(), "repogpt_chroma_db")
     
     vector_store = Chroma(
         collection_name=collection_name,
@@ -38,7 +39,8 @@ def embed_and_store(chunks: list[dict], clear_existing: bool = True):
                 print(f"Cleared {len(db_data['ids'])} existing chunks via Chroma API.")
         except Exception as e:
             print(f"Warning: Could not clear existing chunks via API: {e}")
-            persist_directory = os.path.join(os.path.dirname(os.path.dirname(__file__)), "chroma_db")
+            import tempfile
+            persist_directory = os.path.join(tempfile.gettempdir(), "repogpt_chroma_db")
             if os.path.exists(persist_directory):
                 try:
                     shutil.rmtree(persist_directory)
@@ -63,7 +65,8 @@ def embed_and_store(chunks: list[dict], clear_existing: bool = True):
     print(f"Stored {len(documents)} chunks in Chroma database.")
 
 def clear_db(collection_name: str = "repo_chunks"):
-    persist_directory = os.path.join(os.path.dirname(os.path.dirname(__file__)), "chroma_db")
+    import tempfile
+    persist_directory = os.path.join(tempfile.gettempdir(), "repogpt_chroma_db")
     if os.path.exists(persist_directory):
         shutil.rmtree(persist_directory)
         print(f"Cleared Chroma DB at {persist_directory}")

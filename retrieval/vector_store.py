@@ -4,7 +4,8 @@ from ingestion.embedder import get_embeddings
 
 def get_vector_store(collection_name: str = "repo_chunks"):
     embeddings = get_embeddings()
-    persist_directory = os.path.join(os.path.dirname(os.path.dirname(__file__)), "chroma_db")
+    import tempfile
+    persist_directory = os.path.join(tempfile.gettempdir(), "repogpt_chroma_db")
     
     return Chroma(
         collection_name=collection_name,
